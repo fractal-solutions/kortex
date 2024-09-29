@@ -53,11 +53,22 @@ class NeuralNetwork {
         return sig * (1 - sig);
     }
 
+    swish(x){
+        return x / (1 + Math.exp(-x));
+    }
+
+    swishDerivative(x) {
+        const sig = this.sigmoid(x);
+        return sig + x * sig * (1 - sig);
+    }
+
     activate(x) {
         if (this.activationType === 'relu') {
             return this.relu(x);
         } else if (this.activationType === 'sigmoid') {
             return this.sigmoid(x);
+        } else if (this.activationType === 'swish') {
+            return this.swish(x);
         }
     }
 
@@ -66,6 +77,8 @@ class NeuralNetwork {
             return this.reluDerivative(x);
         } else if (this.activationType === 'sigmoid') {
             return this.sigmoidDerivative(x);
+        } else if (this.activationType === 'swish') {
+            return this.swishDerivative(x);
         }
     }
 
@@ -108,6 +121,7 @@ class NeuralNetwork {
         for (let i = 0; i < target.length; i++) {
             loss += (target[i] - output[i]) ** 2;
         }
+        console.log("t",target.length)
         return loss / target.length;
     }
 
@@ -119,6 +133,31 @@ class NeuralNetwork {
         return loss / target.length;
     }
 
+    huberLoss(target, output) {
+        const delta = 1.0;
+        let loss = 0;
+        for (let i = 0; i < target.length; i++) {
+            const error = target[i] - output[i];
+            if(Math.abs(error) <= delta){
+                loss += 0.5 * error * error; //quadratic loss
+            } else {
+                loss += delta * Math.abs(error) - 0.5 * delta; //linear loss
+            }
+        }
+        return loss / target.length;
+
+    }
+
+    huberLossDerivative(target, output) {
+        const delta = 1.0;
+        const error = target - output;
+        if(Math.abs(error) <= delta){
+            return error;
+        } else {
+            return (error > 0 ? delta : -delta)
+        }
+    } //for output layer in backprop calculation only
+
     backward(input, target, learningRate) {
         const deltas = [];
         const output = this.layerOutputs[this.layerOutputs.length - 1];
@@ -126,7 +165,7 @@ class NeuralNetwork {
         // Calculate delta for output layer
         const outputDelta = [];
         for (let i = 0; i < this.outputSize; i++) {
-            outputDelta.push((target[i] - output[i]));
+            outputDelta.push(this.huberLossDerivative(target[i],output[i]));
         }
         deltas.push(outputDelta);
 
@@ -167,8 +206,9 @@ class NeuralNetwork {
                 const input = data.input;
                 const target = data.output;
                 const output = this.forward(input);
-                this.activationType === 'relu' ?
-                totalLoss += this.meanSquaredErrorLoss(target, output) :
+                this.activationType === 'relu' || this.activationType === 'swish' ?
+                //totalLoss += this.meanSquaredErrorLoss(target, output) :
+                totalLoss += this.huberLoss(target, output) :
                 totalLoss += this.crossEntropyLoss(target, output);
                 this.backward(input, target, learningRate);
             }

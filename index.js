@@ -11,7 +11,7 @@ const trainingData = [
 const network = new NeuralNetwork(3,[2],2,'relu')
 
 const learningRate = 0.1
-const epochs = 100
+const epochs = 300
 network.train(trainingData,learningRate,epochs,true)
 console.log('TESTING...')
 const testData = [
