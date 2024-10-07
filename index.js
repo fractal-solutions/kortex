@@ -25,3 +25,7 @@ for(let input of testData){
     const prediction = network.forward(input)
     console.log(`Input: ${input}, Prediction: ${prediction}`)
 }
+
+
+
+  
